@@ -126,13 +126,16 @@ function enviar(fila) {
       data:  Object.assign({ url: './' }, n.data),
     }))
     .then(() => console.log('enviado:', n.title))
-    .catch(e => {
-      console.error('falhou:', n.title, e.statusCode || e.message);
-      // 404/410 = inscrição expirada: refazer pelo app e atualizar PUSH_SUB
-      if (e.statusCode === 404 || e.statusCode === 410)
-        console.error('>> inscrição expirada. Reative no app e atualize o secret PUSH_SUB.');
-    })
-  ));
+  .catch(e => {
+  console.error('falhou:', n.title);
+  console.error('status:', e.statusCode);
+  console.error('message:', e.message);
+  console.error('body:', e.body);
+  console.error('headers:', e.headers);
+
+  if (e.statusCode === 404 || e.statusCode === 410)
+    console.error('>> inscrição expirada. Reative no app e atualize o secret PUSH_SUB.');
+})
 }
 
 /* ---------- main ---------- */
