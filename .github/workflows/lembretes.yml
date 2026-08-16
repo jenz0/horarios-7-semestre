@@ -26,7 +26,43 @@ jobs:
           node-version: "20"
 
       - run: npm install web-push --no-save
+       - name: Verificar par VAPID
+        env:
+          VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+        run: |
+          node - <<'NODE'
+          const crypto = require('crypto');
 
+          const privateKey = Buffer.from(process.env.VAPID_PRIVATE, 'base64url');
+
+          const ecdh = crypto.createECDH('prime256v1');
+          ecdh.setPrivateKey(privateKey);
+
+          const derivedPublic = ecdh
+            .getPublicKey(null, 'uncompressed')
+            .toString('base64url');
+
+          if (derivedPublic === process.env.VAPID_PUBLIC) {
+            console.log('VAPID MATCH: OK');
+          } else {
+            console.log('VAPID MATCH: FAIL');
+            process.exit(1);
+          }
+          NODE
+
+      - name: Enviar lembretes
+        env:
+          VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          PUSH_SUB: ${{ secrets.PUSH_SUB }}
+        run: |
+          case "${{ github.event.inputs.modo }}" in
+            teste) node push/enviar.js --teste ;;
+            seco) node push/enviar.js --seco ;;
+            *) node push/enviar.js ;;
+          esac
       - name: Enviar lembretes
         env:
           VAPID_PUBLIC:  ${{ secrets.VAPID_PUBLIC }}
