@@ -110,32 +110,58 @@ function pendentes({ DADOS, BLOCOS, CARROSSEL }) {
 function enviar(fila) {
   const webpush = require('web-push');
   const { VAPID_PUBLIC, VAPID_PRIVATE, VAPID_SUBJECT, PUSH_SUB } = process.env;
-  for (const [k, v] of Object.entries({ VAPID_PUBLIC, VAPID_PRIVATE, VAPID_SUBJECT, PUSH_SUB }))
-    if (!v) { console.error('secret ausente:', k); process.exit(1); }
 
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+  for (const [k, v] of Object.entries({
+    VAPID_PUBLIC,
+    VAPID_PRIVATE,
+    VAPID_SUBJECT,
+    PUSH_SUB
+  })) {
+    if (!v) {
+      console.error('secret ausente:', k);
+      process.exit(1);
+    }
+  }
+
+  webpush.setVapidDetails(
+    VAPID_SUBJECT,
+    VAPID_PUBLIC,
+    VAPID_PRIVATE
+  );
+
   const sub = JSON.parse(PUSH_SUB);
 
-  return Promise.all(fila.map(n =>
-    webpush.sendNotification(sub, JSON.stringify({
-      title: n.title,
-      body:  n.body,
-      icon:  './icon-192-a.png',
-      badge: './badge-a.png',
-      tag:   n.tag,
-      data:  Object.assign({ url: './' }, n.data),
-    }))
-    .then(() => console.log('enviado:', n.title))
-  .catch(e => {
-  console.error('falhou:', n.title);
-  console.error('status:', e.statusCode);
-  console.error('message:', e.message);
-  console.error('body:', e.body);
-  console.error('headers:', e.headers);
+  return Promise.all(
+    fila.map(n =>
+      webpush.sendNotification(
+        sub,
+        JSON.stringify({
+          title: n.title,
+          body: n.body,
+          icon: './icon-192-a.png',
+          badge: './badge-a.png',
+          tag: n.tag,
+          data: Object.assign({ url: './' }, n.data)
+        })
+      )
+      .then(() => {
+        console.log('enviado:', n.title);
+      })
+      .catch(e => {
+        console.error('falhou:', n.title);
+        console.error('status:', e.statusCode);
+        console.error('message:', e.message);
+        console.error('body:', e.body);
+        console.error('headers:', e.headers);
 
-  if (e.statusCode === 404 || e.statusCode === 410)
-    console.error('>> inscrição expirada. Reative no app e atualize o secret PUSH_SUB.');
-})
+        if (e.statusCode === 404 || e.statusCode === 410) {
+          console.error(
+            '>> inscrição expirada. Reative no app e atualize o secret PUSH_SUB.'
+          );
+        }
+      })
+    )
+  );
 }
 
 /* ---------- main ---------- */
