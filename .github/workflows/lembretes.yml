@@ -3,10 +3,11 @@ name: Lembretes
 on:
   schedule:
     # a cada 15 min entre 09:00 e 00:00 UTC = 06:00 às 21:00 em Salvador.
-    # O cron do GitHub Actions costuma atrasar alguns minutos; a janela de
-    # +15 min em enviar.js absorve isso.
-    - cron: "*/15 9-23 * * *"
-
+    # Minutos deslocados (4/19/34/49): o GitHub descarta execuções sob carga,
+    # e os minutos redondos são os mais congestionados.
+    # Execução descartada é recuperada pela próxima: enviar.js olha 30 min
+    # para trás e o estado em push/estado/ evita aviso repetido.
+    - cron: "4,19,34,49 9-23 * * *"
   workflow_dispatch:
     inputs:
       modo:
@@ -19,7 +20,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-
     steps:
       - uses: actions/checkout@v4
 
@@ -29,15 +29,29 @@ jobs:
 
       - run: npm install web-push --no-save
 
+      - name: Restaurar o que já foi enviado hoje
+        uses: actions/cache/restore@v4
+        with:
+          path: push/estado
+          key: enviados-${{ github.run_id }}
+          restore-keys: enviados-
+
       - name: Enviar lembretes
         env:
-          VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
+          VAPID_PUBLIC:  ${{ secrets.VAPID_PUBLIC }}
           VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
           VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
-          PUSH_SUB: ${{ secrets.PUSH_SUB }}
+          PUSH_SUB:      ${{ secrets.PUSH_SUB }}
         run: |
           case "${{ github.event.inputs.modo }}" in
             teste) node push/enviar.js --teste ;;
-            seco) node push/enviar.js --seco ;;
-            *) node push/enviar.js ;;
+            seco)  node push/enviar.js --seco  ;;
+            *)     node push/enviar.js         ;;
           esac
+
+      - name: Guardar o que foi enviado
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: push/estado
+          key: enviados-${{ github.run_id }}
