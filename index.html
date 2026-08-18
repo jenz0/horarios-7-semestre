@@ -198,6 +198,8 @@ footer{font-size:10.5px;color:var(--sub);text-align:center;line-height:1.5;paddi
 .tagFer{font-size:9.5px;font-weight:900;background:#8A9691;color:#fff;border-radius:999px;padding:2px 7px}
 .dayhead .fernome{font-size:11.5px;font-weight:700;color:#8A9691;white-space:nowrap;
  overflow:hidden;text-overflow:ellipsis;max-width:44%}
+.semaula{background:#F2F4F3;border:1px dashed #CFD7D3;border-radius:12px;padding:13px 14px;
+ font-size:12.5px;font-weight:600;color:#6B7671;line-height:1.45;margin-bottom:8px}
 /* ---- atividade pessoal e bloco de estudo do usuario ---- */
 .card.pess,.card.blkp{border-style:dashed;border-color:#C6D3CC}
 .tag.tagp{background:#E8F2EC;color:#2A5C4B}
@@ -271,10 +273,12 @@ CARROSSEL={"2": ["Reumatologia", "Dermatologia"], "3": ["Nefrologia", "Urologia"
    documentar o motivo e proteger contra reintroducao numa grade futura. */
 const FERIADOS={"07/09/2026":"Independência do Brasil",
  "12/10/2026":"Nossa Senhora Aparecida",
- "13/10/2026":"Recesso — Dia dos Professores",
+ "13/10/2026":"Recesso acadêmico",
  "02/11/2026":"Finados",
  "20/11/2026":"Consciência Negra",
  "08/12/2026":"Nossa Senhora da Conceição"};
+/* Rotulo exibido no cabecalho do dia. Sem entrada aqui, o padrao e FERIADO. */
+const ROTULO_DIA={"13/10/2026":"RECESSO"};
 const KEY='horarios7_A_v4', SCHEMA=5, LIMITE=0.25;
 /* Dados proprios do usuario — chaves novas e independentes.
    Nunca sobrescrevem horarios7_A_v4 nem sao lidas por acumular(). */
@@ -691,6 +695,10 @@ function renderAulas(){
   const t0=pD(s.seg).getTime(),t1=t0+7*864e5;
   if(!fm)[...PESS,...BLKP].forEach(a=>{const t=pD(a.data).getTime();
    if(t>=t0&&t<t1&&!porData[a.data]){porData[a.data]=[];datas.push(a.data);}});
+  /* feriado sem aula cadastrada: a grade oficial ja removeu o dia, mas ele
+     continua aparecendo na agenda com o aviso — nenhum item e inventado */
+  if(!fm)Object.keys(FERIADOS).forEach(d=>{const t=pD(d).getTime();
+   if(t>=t0&&t<t1&&!porData[d]){porData[d]=[];datas.push(d);}});
   if(!itens.length&&!datas.length&&!s.banner)return;
   total+=itens.length;
   datas.sort((x,y)=>pD(x)-pD(y));
@@ -702,7 +710,7 @@ function renderAulas(){
    h+=`<div class="dayhead ${eh?'hoje':''}" id="${idDia(d)}" data-d="${d}">
        <span class="nome">${nomeDia}</span><span class="dt">${d}</span>
        ${eh?'<span class="tagHoje">HOJE</span>':''}
-       ${fer?`<span class="tagFer">FERIADO</span><span class="fernome">${esc(fer)}</span>`:''}
+       ${fer?`<span class="tagFer">${ROTULO_DIA[d]||'FERIADO'}</span><span class="fernome">${esc(fer)}</span>`:''}
        <span class="risco"></span></div>`;
    /* linha do tempo do dia: aula oficial + minha agenda + meus blocos */
    const linha=porData[d].map(i=>({k:'a',i,t:hm(i.hor.slice(0,5))}));
